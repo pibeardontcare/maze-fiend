@@ -283,7 +283,11 @@
     { id:'square', label:'Square', icon:'<rect x="5" y="5" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>' },
     { id:'circle', label:'Circle', icon:'<circle cx="17" cy="17" r="13" fill="none" stroke="currentColor" stroke-width="3"/>' },
     { id:'heart',  label:'Heart',  icon:'<path d="M17 28 C5 19 6 9 13 8 C16 7.5 17 11 17 11 C17 11 18 7.5 21 8 C28 9 29 19 17 28 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' },
-    { id:'star',   label:'Star',   icon:'<polygon points="17,3 21,13 32,13 23,20 26,31 17,24 8,31 11,20 2,13 13,13" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' }
+    { id:'star',    label:'Star',    icon:'<polygon points="17,3 21,13 32,13 23,20 26,31 17,24 8,31 11,20 2,13 13,13" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' },
+    { id:'hexagon', label:'Hexagon', icon:'<polygon points="30,17 24,28 11,28 4,17 11,6 24,6" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' },
+    { id:'triangle',label:'Triangle',icon:'<polygon points="17,4 30,30 4,30" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' },
+    { id:'bear',    label:'Bear',    icon:'<circle cx="17" cy="21" r="11" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="9" cy="11" r="5" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="25" cy="11" r="5" fill="none" stroke="currentColor" stroke-width="3"/>' },
+    { id:'fish',    label:'Fish',    icon:'<ellipse cx="14" cy="17" rx="12" ry="8" fill="none" stroke="currentColor" stroke-width="3"/><polyline points="33,10 26,17 33,24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' }
   ];
 
   const LEVELS = [
@@ -378,6 +382,14 @@
           inside = eq <= 0.02;
         } else if(shape==='star'){
           inside = pointInStar(nx, ny);
+        } else if(shape==='hexagon'){
+          inside = pointInHexagon(nx, ny);
+        } else if(shape==='triangle'){
+          inside = pointInTriangle(nx, ny);
+        } else if(shape==='bear'){
+          inside = pointInBear(nx, ny);
+        } else if(shape==='fish'){
+          inside = pointInFish(nx, ny);
         }
         mask[r][col] = inside;
       }
@@ -401,6 +413,53 @@
       if(intersect) inside = !inside;
     }
     return inside;
+  }
+
+  function rayCast(pts, nx, ny){
+    let inside = false;
+    for(let i=0, j=pts.length-1; i<pts.length; j=i++){
+      const xi=pts[i][0], yi=pts[i][1], xj=pts[j][0], yj=pts[j][1];
+      const intersect = ((yi>ny)!==(yj>ny)) && (nx < (xj-xi)*(ny-yi)/((yj-yi)||1e-9)+xi);
+      if(intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function pointInHexagon(nx, ny){
+    const pts = [];
+    for(let i=0;i<6;i++){
+      const ang = (Math.PI/3)*i - Math.PI/2; // pointy-top
+      pts.push([Math.cos(ang)*1.02, Math.sin(ang)*1.02]);
+    }
+    return rayCast(pts, nx, ny);
+  }
+
+  function pointInTriangle(nx, ny){
+    // equilateral, apex at top, scaled to fill grid
+    return rayCast([[0,-1.10],[-1.0,0.85],[1.0,0.85]], nx, ny);
+  }
+
+  function pointInBear(nx, ny){
+    // head (shifted down slightly to leave room for ears)
+    if(nx*nx + (ny-0.15)*(ny-0.15) <= 0.84*0.84) return true;
+    // left ear
+    if((nx+0.58)*(nx+0.58) + (ny+0.62)*(ny+0.62) <= 0.33*0.33) return true;
+    // right ear
+    if((nx-0.58)*(nx-0.58) + (ny+0.62)*(ny+0.62) <= 0.33*0.33) return true;
+    return false;
+  }
+
+  function pointInFish(nx, ny){
+    // oval body, shifted left so tail fits on right
+    const bx = nx + 0.08;
+    if((bx/0.75)*(bx/0.75) + (ny/0.50)*(ny/0.50) <= 1.0) return true;
+    // forked tail: two lobes fanning right, V-notch cut in from right
+    if(nx >= 0.48 && nx <= 1.02){
+      const spread = (nx - 0.48) * 0.62;
+      const notch  = (1.02 - nx) * 0.28; // deepens toward tip
+      if(Math.abs(ny) >= notch && Math.abs(ny) <= spread) return true;
+    }
+    return false;
   }
 
   function largestComponent(mask, n){
