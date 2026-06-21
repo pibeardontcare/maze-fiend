@@ -213,7 +213,7 @@
     h1{ font-size:22px; margin-bottom:14px; }
     .layout{ display:block; }
     .stage{ border:none; padding:0; }
-    #mazeCanvas{ max-width:100%; }
+    #mazeCanvas, #printProxy{ max-width:100%; }
     body{ padding:0; }
 
     body.print-full header,
@@ -225,7 +225,8 @@
       align-items:center;
       justify-content:center;
     }
-    body.print-full #mazeCanvas{
+    body.print-full #mazeCanvas,
+    body.print-full #printProxy{
       width:auto;
       height:96vh;
       max-width:100%;
@@ -334,7 +335,20 @@
     document.body.classList.add('print-full');
     window.print();
   });
+
+  // Safari won't print canvas — swap it for an img before the dialog opens
+  window.addEventListener('beforeprint', ()=>{
+    const img = document.createElement('img');
+    img.id = 'printProxy';
+    img.src = canvas.toDataURL('image/png');
+    img.style.cssText = canvas.style.cssText;
+    canvas.parentNode.insertBefore(img, canvas);
+    canvas.style.display = 'none';
+  });
   window.addEventListener('afterprint', ()=>{
+    const img = document.getElementById('printProxy');
+    if(img) img.remove();
+    canvas.style.display = '';
     document.body.classList.remove('print-full');
   });
   document.getElementById('saveBtn').addEventListener('click', ()=>{
