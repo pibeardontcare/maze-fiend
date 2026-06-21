@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maze Maker</title>
+<title>Maze Fiend MazeMaker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -213,7 +213,8 @@
     h1{ font-size:22px; margin-bottom:14px; }
     .layout{ display:block; }
     .stage{ border:none; padding:0; }
-    #mazeCanvas, #printProxy{ max-width:100%; }
+    #mazeCanvas{ display:none !important; }
+    #printProxy{ display:block !important; max-width:100%; }
     body{ padding:0; }
 
     body.print-full header,
@@ -225,7 +226,6 @@
       align-items:center;
       justify-content:center;
     }
-    body.print-full #mazeCanvas,
     body.print-full #printProxy{
       width:auto;
       height:96vh;
@@ -238,7 +238,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Maze<span class="o"></span>Maker</h1>
+    <h1>Maze Fiend <span class="o"></span> MazeMaker</h1>
     <p>Pick a shape, pick a level, and find your way through!</p>
   </header>
 
@@ -267,6 +267,7 @@
 
     <div class="stage">
       <canvas id="mazeCanvas" width="900" height="900"></canvas>
+      <img id="printProxy" style="display:none; max-width:100%;">
       <div class="legend">
         <span><i class="badge start"></i> Start</span>
         <span><i class="badge finish"></i> Finish</span>
@@ -336,19 +337,12 @@
     window.print();
   });
 
-  // Safari won't print canvas — swap it for an img before the dialog opens
+  const printProxy = document.getElementById('printProxy');
+  // Canvas won't print in Safari — update the static img before each print
   window.addEventListener('beforeprint', ()=>{
-    const img = document.createElement('img');
-    img.id = 'printProxy';
-    img.src = canvas.toDataURL('image/png');
-    img.style.cssText = canvas.style.cssText;
-    canvas.parentNode.insertBefore(img, canvas);
-    canvas.style.display = 'none';
+    printProxy.src = canvas.toDataURL('image/png');
   });
   window.addEventListener('afterprint', ()=>{
-    const img = document.getElementById('printProxy');
-    if(img) img.remove();
-    canvas.style.display = '';
     document.body.classList.remove('print-full');
   });
   document.getElementById('saveBtn').addEventListener('click', ()=>{
