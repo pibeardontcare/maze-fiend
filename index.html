@@ -258,7 +258,6 @@
         <h2>Go</h2>
         <div class="actions">
           <button class="btn" id="newMazeBtn">New Maze</button>
-          <button class="btn secondary" id="printBtn">Print</button>
           <button class="btn secondary" id="printFullBtn">Print Full Page</button>
           <button class="btn secondary" id="saveBtn">Save Image</button>
         </div>
@@ -332,10 +331,6 @@
   });
 
   document.getElementById('newMazeBtn').addEventListener('click', regenerate);
-  document.getElementById('printBtn').addEventListener('click', ()=>{
-    document.body.classList.remove('print-full');
-    window.print();
-  });
   document.getElementById('printFullBtn').addEventListener('click', ()=>{
     document.body.classList.add('print-full');
     window.print();
