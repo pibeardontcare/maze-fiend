@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#111111;
+    --paper:#ffffff;
+    --gray:#8a8a8a;
+    --pale:#f3f3f3;
+    --line:#dcdcdc;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Nunito', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+  header{
+    text-align:center;
+    margin-bottom:28px;
+  }
+  h1{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:clamp(34px, 6vw, 54px);
+    letter-spacing:0.5px;
+    margin:0 0 6px;
+    text-transform:uppercase;
+  }
+  h1 .o{
+    display:inline-block;
+    width:0.62em;
+    height:0.62em;
+    border-radius:50%;
+    border:0.1em solid var(--ink);
+    vertical-align:-0.02em;
+  }
+  header p{
+    margin:0;
+    color:var(--gray);
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.4px;
+  }
+  .layout{
+    display:grid;
+    grid-template-columns:260px 1fr;
+    gap:28px;
+    align-items:start;
+  }
+  @media (max-width:760px){
+    .layout{ grid-template-columns:1fr; }
+  }
+  .panel{
+    border:3px solid var(--ink);
+    border-radius:22px;
+    padding:18px;
+    background:var(--paper);
+  }
+  .panel + .panel{ margin-top:18px; }
+  .panel h2{
+    font-family:'Baloo 2', sans-serif;
+    font-size:16px;
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    margin:0 0 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2::before{
+    content:"";
+    width:8px; height:8px;
+    background:var(--ink);
+    border-radius:50%;
+    display:inline-block;
+  }
+  .shape-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .shape-btn, .level-btn{
+    border:2.5px solid var(--ink);
+    background:var(--paper);
+    border-radius:14px;
+    padding:10px 6px;
+    cursor:pointer;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    transition:transform .12s ease, background .12s ease;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+  }
+  .shape-btn svg{ width:30px; height:30px; }
+  .shape-btn:hover, .level-btn:hover{ transform:translateY(-2px); }
+  .shape-btn.active, .level-btn.active{
+    background:var(--ink);
+    color:var(--paper);
+  }
+  .shape-btn.active svg path, .shape-btn.active svg circle, .shape-btn.active svg polygon{
+    stroke:var(--paper);
+  }
+  .level-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .level-btn{
+    flex-direction:row;
+    justify-content:space-between;
+    padding:12px 16px;
+  }
+  .stars{ letter-spacing:2px; font-size:13px; }
+  .level-btn.active .stars{ color:var(--paper); }
+  .level-sub{
+    display:block;
+    font-family:'Nunito', sans-serif;
+    font-weight:600;
+    text-transform:none;
+    font-size:11px;
+    color:var(--gray);
+    margin-top:2px;
+  }
+  .level-btn.active .level-sub{ color:#cfcfcf; }
+  .actions{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .btn{
+    border:2.5px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:14px;
+    padding:13px 16px;
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    cursor:pointer;
+    transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:hover{ transform:translateY(-2px); }
+  .btn:active{ transform:translateY(0); }
+  .btn.secondary{
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .btn.toggled{
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .stage{
+    border:3px solid var(--ink);
+    border-radius:22px;
+    padding:22px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
+  #mazeCanvas{
+    width:100%;
+    max-width:620px;
+    height:auto;
+    aspect-ratio:1/1;
+    image-rendering:auto;
+  }
+  .hint{
+    font-weight:700;
+    color:var(--gray);
+    font-size:14px;
+    text-align:center;
+  }
+  .legend{
+    display:flex;
+    gap:22px;
+    font-weight:700;
+    font-size:13px;
+  }
+  .legend span{ display:flex; align-items:center; gap:7px; }
+  .badge{
+    width:18px; height:18px;
+    border:2px solid var(--ink);
+    display:inline-block;
+  }
+  .badge.start{ border-radius:50%; background:var(--ink); }
+  .badge.finish{ border-radius:4px; background:var(--ink); }
+
+  @media print{
+    @page{ margin:0.3in; }
+    header p, .panel, .hint, .legend{ display:none !important; }
+    h1{ font-size:22px; margin-bottom:14px; }
+    .layout{ display:block; }
+    .stage{ border:none; padding:0; }
+    #mazeCanvas{ max-width:100%; }
+    body{ padding:0; }
+
+    body.print-full header,
+    body.print-full .legend{ display:none !important; }
+    body.print-full .wrap{ padding:0; max-width:none; }
+    body.print-full .stage{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    body.print-full #mazeCanvas{
+      width:auto;
+      height:96vh;
+      max-width:100%;
+      max-height:100vh;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Maze<span class="o"></span>Maker</h1>
+    <p>Pick a shape, pick a level, and find your way through!</p>
+  </header>
+
+  <div class="layout">
+    <div class="controls">
+      <div class="panel">
+        <h2>Shape</h2>
+        <div class="shape-grid" id="shapeGrid"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Level</h2>
+        <div class="level-list" id="levelList"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Go</h2>
+        <div class="actions">
+          <button class="btn" id="newMazeBtn">New Maze</button>
+          <button class="btn secondary" id="printBtn">Print</button>
+          <button class="btn secondary" id="printFullBtn">Print Full Page</button>
+          <button class="btn secondary" id="saveBtn">Save Image</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <canvas id="mazeCanvas" width="900" height="900"></canvas>
+      <div class="legend">
+        <span><i class="badge start"></i> Start</span>
+        <span><i class="badge finish"></i> Finish</span>
+      </div>
+      <p class="hint" id="hintText">Trace a path with your finger or a pencil, from the circle to the square!</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const SHAPES = [
+    { id:'square', label:'Square', icon:'<rect x="5" y="5" width="24" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>' },
+    { id:'circle', label:'Circle', icon:'<circle cx="17" cy="17" r="13" fill="none" stroke="currentColor" stroke-width="3"/>' },
+    { id:'heart',  label:'Heart',  icon:'<path d="M17 28 C5 19 6 9 13 8 C16 7.5 17 11 17 11 C17 11 18 7.5 21 8 C28 9 29 19 17 28 Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' },
+    { id:'star',   label:'Star',   icon:'<polygon points="17,3 21,13 32,13 23,20 26,31 17,24 8,31 11,20 2,13 13,13" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' }
+  ];
+
+  const LEVELS = [
+    { id:'tiny',    label:'Tiny',    sub:'6\u00d76 \u00b7 first maze',        stars:'\u2605\u2606\u2606\u2606\u2606\u2606', cols:6 },
+    { id:'small',   label:'Small',   sub:'10\u00d710 \u00b7 a little trickier', stars:'\u2605\u2605\u2606\u2606\u2606\u2606', cols:10 },
+    { id:'medium',  label:'Medium',  sub:'15\u00d715 \u00b7 real puzzling',     stars:'\u2605\u2605\u2605\u2606\u2606\u2606', cols:15 },
+    { id:'large',   label:'Large',   sub:'22\u00d722 \u00b7 takes a while',     stars:'\u2605\u2605\u2605\u2605\u2606\u2606', cols:22 },
+    { id:'massive', label:'Massive', sub:'36\u00d736 \u00b7 hundreds of turns', stars:'\u2605\u2605\u2605\u2605\u2605\u2606', cols:36 },
+    { id:'extreme', label:'Extreme', sub:'175\u00d7175 \u00b7 10\u00d7 the maze, true marathon', stars:'\u2605\u2605\u2605\u2605\u2605\u2605', cols:175 }
+  ];
+
+  let state = { shape:'square', level:'small' };
+  let maze = null; // {cols, mask, cells, start, finish, path}
+
+  // ---------- UI build ----------
+  const shapeGrid = document.getElementById('shapeGrid');
+  SHAPES.forEach(s=>{
+    const b = document.createElement('button');
+    b.className = 'shape-btn' + (s.id===state.shape ? ' active' : '');
+    b.dataset.id = s.id;
+    b.innerHTML = `<svg viewBox="0 0 34 34">${s.icon}</svg><span>${s.label}</span>`;
+    b.addEventListener('click', ()=>{
+      state.shape = s.id;
+      [...shapeGrid.children].forEach(c=>c.classList.toggle('active', c.dataset.id===s.id));
+      regenerate();
+    });
+    shapeGrid.appendChild(b);
+  });
+
+  const levelList = document.getElementById('levelList');
+  LEVELS.forEach(l=>{
+    const b = document.createElement('button');
+    b.className = 'level-btn' + (l.id===state.level ? ' active' : '');
+    b.dataset.id = l.id;
+    b.innerHTML = `<span>${l.label}<span class="level-sub">${l.sub}</span></span><span class="stars">${l.stars}</span>`;
+    b.addEventListener('click', ()=>{
+      state.level = l.id;
+      [...levelList.children].forEach(c=>c.classList.toggle('active', c.dataset.id===l.id));
+      regenerate();
+    });
+    levelList.appendChild(b);
+  });
+
+  document.getElementById('newMazeBtn').addEventListener('click', regenerate);
+  document.getElementById('printBtn').addEventListener('click', ()=>{
+    document.body.classList.remove('print-full');
+    window.print();
+  });
+  document.getElementById('printFullBtn').addEventListener('click', ()=>{
+    document.body.classList.add('print-full');
+    window.print();
+  });
+  window.addEventListener('afterprint', ()=>{
+    document.body.classList.remove('print-full');
+  });
+  document.getElementById('saveBtn').addEventListener('click', ()=>{
+    try{
+      const link = document.createElement('a');
+      link.download = `maze-${state.shape}-${state.level}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }catch(e){
+      alert('Could not save the image. If you are viewing this inside a chat preview, please open this file directly in your browser and try again.');
+    }
+  });
+
+  // ---------- Maze generation ----------
+  function getMask(shape, n){
+    const mask = Array.from({length:n}, ()=>Array(n).fill(false));
+    const c = (n-1)/2;
+    for(let r=0;r<n;r++){
+      for(let col=0; col<n; col++){
+        const nx = (col - c) / (c || 1);
+        const ny = (r - c) / (c || 1);
+        let inside = false;
+        if(shape==='square'){
+          inside = true;
+        } else if(shape==='circle'){
+          inside = (nx*nx + ny*ny) <= 1.02;
+        } else if(shape==='heart'){
+          const x = nx * 1.25;
+          const y = -ny * 1.25 + 0.35;
+          const eq = Math.pow(x*x + y*y - 1, 3) - x*x*y*y*y;
+          inside = eq <= 0.02;
+        } else if(shape==='star'){
+          inside = pointInStar(nx, ny);
+        }
+        mask[r][col] = inside;
+      }
+    }
+    return mask;
+  }
+
+  function pointInStar(nx, ny){
+    // 5-point star polygon test (ray casting), star slightly larger to fill grid
+    const outerR = 1.05, innerR = 0.46, spikes = 5;
+    const pts = [];
+    for(let i=0;i<spikes*2;i++){
+      const r = (i%2===0) ? outerR : innerR;
+      const ang = (Math.PI/spikes)*i - Math.PI/2;
+      pts.push([Math.cos(ang)*r, Math.sin(ang)*r]);
+    }
+    let inside = false;
+    for(let i=0, j=pts.length-1; i<pts.length; j=i++){
+      const xi=pts[i][0], yi=pts[i][1], xj=pts[j][0], yj=pts[j][1];
+      const intersect = ((yi>ny)!==(yj>ny)) && (nx < (xj-xi)*(ny-yi)/((yj-yi)||1e-9)+xi);
+      if(intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function largestComponent(mask, n){
+    const visited = Array.from({length:n}, ()=>Array(n).fill(false));
+    let best = null, bestSize = -1;
+    for(let r=0;r<n;r++){
+      for(let col=0; col<n; col++){
+        if(mask[r][col] && !visited[r][col]){
+          const comp = [];
+          const stack = [[r,col]];
+          visited[r][col] = true;
+          while(stack.length){
+            const [cr,cc] = stack.pop();
+            comp.push([cr,cc]);
+            const nbrs = [[cr-1,cc],[cr+1,cc],[cr,cc-1],[cr,cc+1]];
+            for(const [nr,nc] of nbrs){
+              if(nr>=0&&nr<n&&nc>=0&&nc<n&&mask[nr][nc]&&!visited[nr][nc]){
+                visited[nr][nc]=true;
+                stack.push([nr,nc]);
+              }
+            }
+          }
+          if(comp.length > bestSize){ bestSize = comp.length; best = comp; }
+        }
+      }
+    }
+    const cleaned = Array.from({length:n}, ()=>Array(n).fill(false));
+    if(best){ for(const [r,c] of best) cleaned[r][c] = true; }
+    return cleaned;
+  }
+
+  function carveMaze(mask, n){
+    const cells = Array.from({length:n*n}, ()=>({top:false,right:false,bottom:false,left:false,visited:false,inMask:false,enterDir:null}));
+    let startIdx = -1;
+    for(let r=0;r<n;r++) for(let c=0;c<n;c++){
+      const i = r*n+c;
+      cells[i].inMask = mask[r][c];
+      if(mask[r][c] && startIdx===-1) startIdx = i;
+    }
+    if(startIdx===-1) return cells;
+
+    const TURN_BIAS = 0.82; // chance to suppress "go straight" option when a turn is available
+
+    const stack = [startIdx];
+    cells[startIdx].visited = true;
+    while(stack.length){
+      const cur = stack[stack.length-1];
+      const r = Math.floor(cur/n), c = cur % n;
+      let options = [];
+      const dirs = [
+        {dr:-1,dc:0,from:'top',to:'bottom',name:'up'},
+        {dr:1,dc:0,from:'bottom',to:'top',name:'down'},
+        {dr:0,dc:-1,from:'left',to:'right',name:'left'},
+        {dr:0,dc:1,from:'right',to:'left',name:'right'}
+      ];
+      for(const d of dirs){
+        const nr=r+d.dr, nc=c+d.dc;
+        if(nr>=0&&nr<n&&nc>=0&&nc<n){
+          const ni = nr*n+nc;
+          if(mask[nr][nc] && !cells[ni].visited) options.push({ni, d});
+        }
+      }
+      if(options.length){
+        const curDir = cells[cur].enterDir;
+        if(curDir && options.length > 1 && Math.random() < TURN_BIAS){
+          const turning = options.filter(o => o.d.name !== curDir);
+          if(turning.length) options = turning;
+        }
+        const pick = options[Math.floor(Math.random()*options.length)];
+        cells[cur][pick.d.from] = true;
+        cells[pick.ni][pick.d.to] = true;
+        cells[pick.ni].visited = true;
+        cells[pick.ni].enterDir = pick.d.name;
+        stack.push(pick.ni);
+      } else {
+        stack.pop();
+      }
+    }
+    return cells;
+  }
+
+  function neighborsOf(cells, n, idx){
+    const r = Math.floor(idx/n), c = idx % n;
+    const out = [];
+    const cell = cells[idx];
+    if(cell.top && r>0) out.push((r-1)*n+c);
+    if(cell.bottom && r<n-1) out.push((r+1)*n+c);
+    if(cell.left && c>0) out.push(r*n+(c-1));
+    if(cell.right && c<n-1) out.push(r*n+(c+1));
+    return out;
+  }
+
+  function bfsFarthest(cells, n, startIdx){
+    const dist = new Map([[startIdx,0]]);
+    const prev = new Map();
+    const queue = [startIdx];
+    let qi = 0;
+    let farthest = startIdx;
+    while(qi < queue.length){
+      const cur = queue[qi++];
+      for(const nb of neighborsOf(cells, n, cur)){
+        if(!dist.has(nb)){
+          dist.set(nb, dist.get(cur)+1);
+          prev.set(nb, cur);
+          queue.push(nb);
+          if(dist.get(nb) > dist.get(farthest)) farthest = nb;
+        }
+      }
+    }
+    return { farthest, dist, prev };
+  }
+
+  function regenerate(){
+    const levelCfg = LEVELS.find(l=>l.id===state.level);
+    const n = levelCfg.cols;
+    let mask = getMask(state.shape, n);
+    mask = largestComponent(mask, n);
+    const cells = carveMaze(mask, n);
+
+    let firstIncluded = -1;
+    for(let i=0;i<cells.length;i++) if(cells[i].inMask){ firstIncluded = i; break; }
+
+    const pass1 = bfsFarthest(cells, n, firstIncluded);
+    const pass2 = bfsFarthest(cells, n, pass1.farthest);
+    const start = pass1.farthest;
+    const finish = pass2.farthest;
+
+    // path for solution: walk back from finish using pass2.prev
+    const path = [];
+    let cur = finish;
+    while(cur !== undefined){
+      path.push(cur);
+      cur = pass2.prev.get(cur);
+    }
+    path.reverse();
+
+    maze = { n, mask, cells, start, finish, path };
+    draw();
+  }
+
+  // ---------- Drawing ----------
+  const canvas = document.getElementById('mazeCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function draw(){
+    if(!maze) return;
+    const { n, cells, start, finish, path } = maze;
+
+    let cellPx;
+    if(n<=8) cellPx = 84;
+    else if(n<=12) cellPx = 64;
+    else if(n<=18) cellPx = 44;
+    else if(n<=26) cellPx = 30;
+    else if(n<=40) cellPx = 20;
+    else if(n<=70) cellPx = 14;
+    else if(n<=110) cellPx = 10;
+    else cellPx = 8;
+    const marginPx = Math.max(14, cellPx*0.6);
+    const res = Math.round(n*cellPx + marginPx*2);
+    canvas.width = res;
+    canvas.height = res;
+
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,W,H);
+
+    const margin = marginPx;
+    const size = W - margin*2;
+    const cell = size / n;
+    const lw = Math.max(2, cell * 0.11);
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = lw;
+
+    ctx.beginPath();
+    for(let r=0;r<n;r++){
+      for(let c=0;c<n;c++){
+        const idx = r*n+c;
+        const cellData = cells[idx];
+        if(!cellData.inMask) continue;
+        const x0 = margin + c*cell, y0 = margin + r*cell;
+        const x1 = x0+cell, y1 = y0+cell;
+
+        if(!cellData.top) line(x0,y0,x1,y0);
+        if(!cellData.left) line(x0,y0,x0,y1);
+        if(!cellData.bottom) line(x0,y1,x1,y1);
+        if(!cellData.right) line(x1,y0,x1,y1);
+      }
+    }
+    ctx.stroke();
+
+    function line(ax,ay,bx,by){
+      ctx.moveTo(ax,ay);
+      ctx.lineTo(bx,by);
+    }
+
+    // start / finish badges
+    drawBadge(start, 'S', 'circle');
+    drawBadge(finish, 'F', 'square');
+
+    function drawBadge(idx, letter, kind){
+      const r = Math.floor(idx/n), c = idx % n;
+      const cx = margin + c*cell + cell/2;
+      const cy = margin + r*cell + cell/2;
+      const rad = Math.max(cell*0.34, 7);
+      ctx.fillStyle = '#111111';
+      ctx.beginPath();
+      if(kind==='circle'){
+        ctx.arc(cx,cy,rad,0,Math.PI*2);
+      } else {
+        ctx.roundRect ? ctx.roundRect(cx-rad,cy-rad,rad*2,rad*2, rad*0.3) : ctx.rect(cx-rad,cy-rad,rad*2,rad*2);
+      }
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `800 ${Math.max(8, rad*1.05)}px Baloo 2, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(letter, cx, cy+1);
+    }
+  }
+
+  // init
+  regenerate();
+})();
+</script>
+</body>
+</html>
