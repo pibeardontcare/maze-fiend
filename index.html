@@ -272,6 +272,7 @@
         <span><i class="badge finish"></i> Finish</span>
       </div>
       <p class="hint" id="hintText">Trace a path with your finger or a pencil, from the circle to the square!</p>
+      <p class="maze-count" id="mazeCount"></p>
     </div>
   </div>
 </div>
@@ -286,7 +287,9 @@
     { id:'hexagon', label:'Hexagon', icon:'<polygon points="30,17 24,28 11,28 4,17 11,6 24,6" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' },
     { id:'triangle',label:'Triangle',icon:'<polygon points="17,4 30,30 4,30" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>' },
     { id:'bear',    label:'Bear',    icon:'<circle cx="17" cy="21" r="11" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="9" cy="11" r="5" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="25" cy="11" r="5" fill="none" stroke="currentColor" stroke-width="3"/>' },
-    { id:'fish',    label:'Fish',    icon:'<ellipse cx="14" cy="17" rx="12" ry="8" fill="none" stroke="currentColor" stroke-width="3"/><polyline points="33,10 26,17 33,24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' }
+    { id:'fish',    label:'Fish',    icon:'<ellipse cx="14" cy="17" rx="12" ry="8" fill="none" stroke="currentColor" stroke-width="3"/><polyline points="33,10 26,17 33,24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' },
+    { id:'frog',   label:'Frog',   icon:'<ellipse cx="17" cy="21" rx="12" ry="9" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="11" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="23" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="3"/>' },
+    { id:'spiral', label:'Spiral', icon:'<path d="M29,17 A12,12 0 0,1 5,17 A9,9 0 0,0 17,8 A6,6 0 0,1 23,17 A3,3 0 0,0 20,17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>' }
   ];
 
   const LEVELS = [
@@ -385,6 +388,10 @@
           inside = pointInBear(nx, ny);
         } else if(shape==='fish'){
           inside = pointInFish(nx, ny);
+        } else if(shape==='frog'){
+          inside = pointInFrog(nx, ny);
+        } else if(shape==='spiral'){
+          inside = pointInSpiral(nx, ny);
         }
         mask[r][col] = inside;
       }
@@ -455,6 +462,35 @@
       if(Math.abs(ny) >= notch && Math.abs(ny) <= spread) return true;
     }
     return false;
+  }
+
+  function pointInFrog(nx, ny){
+    // wide oval body shifted slightly down
+    if((nx/0.95)*(nx/0.95) + ((ny-0.12)/(0.80))*((ny-0.12)/(0.80)) <= 1.0) return true;
+    // left eye bump
+    if((nx+0.55)*(nx+0.55) + (ny+0.45)*(ny+0.45) <= 0.34*0.34) return true;
+    // right eye bump
+    if((nx-0.55)*(nx-0.55) + (ny+0.45)*(ny+0.45) <= 0.34*0.34) return true;
+    return false;
+  }
+
+  function pointInSpiral(nx, ny){
+    const r = Math.sqrt(nx*nx + ny*ny);
+    if(r > 1.02) return false;
+    const innerR = 0.12;
+    if(r <= innerR) return true; // solid center hub connects all corridors
+    const b = 0.28 / (2 * Math.PI); // radial growth per radian
+    const wallW = 0.058; // half-width of spiral wall
+    const maxR = 0.88;
+    const rawAngle = Math.atan2(ny, nx);
+    const angle = rawAngle < 0 ? rawAngle + 2 * Math.PI : rawAngle;
+    for(let k = 0; k <= 4; k++){
+      const theta = angle + k * 2 * Math.PI;
+      const rWall = innerR + b * theta;
+      if(rWall > maxR) break;
+      if(Math.abs(r - rWall) < wallW) return false;
+    }
+    return true;
   }
 
   function largestComponent(mask, n){
