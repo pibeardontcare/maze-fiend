@@ -343,6 +343,7 @@
   document.getElementById('newMazeBtn').addEventListener('click', regenerate);
   document.getElementById('printFullBtn').addEventListener('click', ()=>{
     document.body.classList.add('print-full');
+    fetch('https://api.counterapi.dev/v1/maze-fiend/prints/up').catch(()=>{});
     window.print();
   });
 
@@ -637,9 +638,7 @@
     maze = { n, mask, cells, start, finish, path };
     draw();
     fetch('https://api.counterapi.dev/v1/maze-fiend/mazes-generated/up')
-      .then(r=>r.json())
-      .then(d=>{ document.getElementById('mazeCount').textContent = d.count.toLocaleString() + ' mazes generated'; })
-      .catch(()=>{});
+      .then(r=>r.json()).then(d=>{ statMazes = d.count; renderStats(); }).catch(()=>{});
   }
 
   // ---------- Drawing ----------
@@ -725,6 +724,23 @@
       ctx.fillText(letter, cx, cy+1);
     }
   }
+
+  // ---------- Stats ----------
+  const mazeCountEl = document.getElementById('mazeCount');
+  let statMazes = null, statVisitors = null;
+
+  function renderStats(){
+    const parts = [];
+    if(statMazes    != null) parts.push(statMazes.toLocaleString()    + ' mazes generated');
+    if(statVisitors != null) parts.push(statVisitors.toLocaleString() + ' unique visitors');
+    if(parts.length) mazeCountEl.textContent = parts.join(' · ');
+  }
+
+  // unique visitor (localStorage-gated so one browser = one count)
+  const isNew = !localStorage.getItem('mf_v1');
+  if(isNew) localStorage.setItem('mf_v1','1');
+  fetch('https://api.counterapi.dev/v1/maze-fiend/visitors' + (isNew ? '/up' : ''))
+    .then(r=>r.json()).then(d=>{ statVisitors = d.count; renderStats(); }).catch(()=>{});
 
   // init
   regenerate();
