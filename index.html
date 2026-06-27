@@ -192,6 +192,13 @@
     font-size:14px;
     text-align:center;
   }
+  .maze-count{
+    font-size:12px;
+    color:var(--gray);
+    text-align:center;
+    opacity:0.65;
+    margin-top:4px;
+  }
   .legend{
     display:flex;
     gap:22px;
@@ -629,6 +636,10 @@
 
     maze = { n, mask, cells, start, finish, path };
     draw();
+    fetch('https://api.counterapi.dev/v1/maze-fiend/mazes-generated/up')
+      .then(r=>r.json())
+      .then(d=>{ document.getElementById('mazeCount').textContent = d.count.toLocaleString() + ' mazes generated'; })
+      .catch(()=>{});
   }
 
   // ---------- Drawing ----------
